@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-gemini-blue: #4285F4;
+  --color-gemini-purple: #9B72CB;
+  --color-gemini-red: #D96570;
+  
+  --color-theme-bg: var(--bg);
+  --color-theme-text: var(--text);
+  --color-theme-sidebar: var(--sidebar);
+  --color-theme-card: var(--card);
+  --color-theme-border: var(--border);
+
+  --background-image-gemini-gradient: linear-gradient(16deg, #4285F4, #9B72CB, #D96570);
+}
+
+:root {
+  --bg: #f8fbff;
+  --text: #0d47a1;
+  --sidebar: #e8f0fe;
+  --card: #f0f4f9;
+  --border: #d2e3fc;
+}
+
+.dark {
+  --bg: #131314;
+  --text: #e2e8f0;
+  --sidebar: #1e1f20;
+  --card: #1e1f20;
+  --border: rgba(255, 255, 255, 0.05);
+}
+
+@layer base {
+  body {
+    @apply min-h-screen overflow-x-hidden transition-colors duration-300;
+    font-family: 'Outfit', sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+  }
+}
+
+@layer components {
+  .glass {
+    @apply backdrop-blur-xl border-white/10;
+    background-color: var(--card);
+    border-color: var(--border);
+  }
+
+  .gemini-text {
+    @apply bg-gemini-gradient bg-clip-text text-transparent;
+  }
+
+  .action-btn-tailwind {
+    @apply flex items-center gap-2 px-4 py-4 rounded-2xl text-sm font-medium transition-all text-left w-full h-full;
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  .action-btn-tailwind:hover {
+    background-color: var(--sidebar);
+  }
+}
+
+.minimal-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.minimal-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.minimal-scrollbar::-webkit-scrollbar-thumb {
+  background: #3c4043;
+  border-radius: 9999px;
+}
+
+.minimal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #5f6368;
+}
+
+/* Firefox support */
+.minimal-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #3c4043 transparent;
+}
+
