@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useState, useEffect, type ReactNode, useRef } from "react";
+import { createContext, useState, useEffect, type ReactNode, useRef, useMemo, useCallback } from "react";
 import { runChat } from "../config/gemini";
 
 export interface Message {
@@ -45,10 +45,12 @@ interface ContextProps {
   selectedModel: "gemini-2.5-flash" | "gemini-2.5-pro";
   setSelectedModel: (model: "gemini-2.5-flash" | "gemini-2.5-pro") => void;
   regenerate: () => Promise<void>;
-  isSettingsOpen: boolean;
-  setIsSettingsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isMobileMenuOpen: boolean;
   setIsMobileMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  apiKey: string;
+  setApiKey: (key: string) => void;
+  isSettingsOpen: boolean;
+  setIsSettingsOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export const Context = createContext<ContextProps | undefined>(undefined);
@@ -62,10 +64,12 @@ const ContextProvider = ({ children }: { children: ReactNode }) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
+  const [apiKey, setApiKey] = useState(() => {
+    return localStorage.getItem("gemini_api_key") || "";
+  });
+  
   const abortControllerRef = useRef<AbortController | null>(null);
   
-  // Aquí manejamos el historial de chats. Intentamos recuperar lo que haya en LocalStorage
-  // para que el usuario no pierda sus conversaciones al refrescar la página.
   const [chats, setChats] = useState<Chat[]>(() => {
     const saved = localStorage.getItem("gemini_chats");
     return saved ? JSON.parse(saved) : [];
@@ -79,53 +83,46 @@ const ContextProvider = ({ children }: { children: ReactNode }) => {
 
   const [selectedModel, setSelectedModel] = useState<"gemini-2.5-flash" | "gemini-2.5-pro">("gemini-2.5-flash");
 
-  // Sincronizamos los chats con el almacenamiento local cada vez que cambian.
   useEffect(() => {
     localStorage.setItem("gemini_chats", JSON.stringify(chats));
   }, [chats]);
 
-  // Manejo del tema (Oscuro/Claro). Aplicamos la clase 'dark' al HTML para que Tailwind haga su magia.
   useEffect(() => {
     localStorage.setItem("gemini_theme", theme);
-    const root = window.document.documentElement;
-    if (theme === 'light') {
-      root.classList.remove('dark');
-    } else {
-      root.classList.add('dark');
-    }
+    document.documentElement.classList.toggle('dark', theme === 'dark');
   }, [theme]);
 
-  const newChat = () => {
+  useEffect(() => {
+    localStorage.setItem("gemini_api_key", apiKey);
+  }, [apiKey]);
+
+  const newChat = useCallback(() => {
     setLoading(false);
     setShowResult(false);
     setActiveChatId(null);
     setInput("");
-  };
+  }, []);
 
-  const loadChat = (id: string) => {
+  const loadChat = useCallback((id: string) => {
     setActiveChatId(id);
     setShowResult(true);
-  };
+  }, []);
 
-  const deleteChat = (id: string) => {
+  const deleteChat = useCallback((id: string) => {
     setChats(prev => prev.filter(chat => chat.id !== id));
-    if (activeChatId === id) {
-      newChat();
-    }
-  };
+    if (activeChatId === id) newChat();
+  }, [activeChatId, newChat]);
 
-  const renameChat = (id: string, newTitle: string) => {
+  const renameChat = useCallback((id: string, newTitle: string) => {
     setChats(prev => prev.map(chat => chat.id === id ? { ...chat, title: newTitle } : chat));
-  };
+  }, []);
 
-  const clearAllChats = () => {
+  const clearAllChats = useCallback(() => {
     setChats([]);
     newChat();
-  };
+  }, [newChat]);
 
-  // Esta es la función principal que envía el mensaje. 
-  // Maneja tanto el texto como las imágenes adjuntas.
-  const onSent = async (prompt: string, imageData?: { data: string, mimeType: string }) => {
+  const onSent = useCallback(async (prompt: string, imageData?: { data: string, mimeType: string }) => {
     const currentPrompt = prompt || input;
     if (!currentPrompt || loading) return;
 
@@ -134,14 +131,9 @@ const ContextProvider = ({ children }: { children: ReactNode }) => {
     setInput("");
     setRecentPrompt(currentPrompt);
 
-    const userMsg: Message = { 
-      role: "user", 
-      text: currentPrompt,
-      image: imageData 
-    };
+    const userMsg: Message = { role: "user", text: currentPrompt, image: imageData };
     let currentId = activeChatId;
 
-    // Si no hay un chat activo, creamos uno nuevo con un título basado en la primera pregunta.
     if (!currentId) {
       currentId = Date.now().toString();
       const newChatObj: Chat = {
@@ -154,7 +146,6 @@ const ContextProvider = ({ children }: { children: ReactNode }) => {
       setChats(prev => [newChatObj, ...prev]);
       setActiveChatId(currentId);
     } else {
-      // Si ya estamos en un chat, simplemente añadimos el mensaje al historial existente.
       setChats(prev => prev.map(chat => 
         chat.id === currentId 
           ? { ...chat, messages: [...chat.messages, userMsg], timestamp: Date.now() } 
@@ -162,23 +153,23 @@ const ContextProvider = ({ children }: { children: ReactNode }) => {
       ));
     }
 
-    // Insertamos un mensaje vacío de la IA para empezar a recibir el "streaming" de texto.
     setChats(prev => prev.map(chat => 
       chat.id === currentId 
         ? { ...chat, messages: [...chat.messages, { role: "model", text: "" }] } 
         : chat
     ));
 
-    // Usamos AbortController para poder detener la respuesta si el usuario lo solicita.
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
+    if (abortControllerRef.current) abortControllerRef.current.abort();
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
+    const effectiveApiKey = apiKey || import.meta.env.VITE_GROQ_API_KEY;
+
     try {
-      const chatHistory = activeChatId ? chats.find(c => c.id === activeChatId)?.messages || [] : [];
-      await runChat(currentPrompt, chatHistory, imageData, abortController.signal, (tokenText: string) => {
+      const activeChat = chats.find(c => c.id === currentId);
+      const chatHistory = activeChat ? activeChat.messages : [];
+      
+      await runChat(currentPrompt, chatHistory, imageData, abortController.signal, effectiveApiKey, (tokenText: string) => {
         setChats(prev => prev.map(chat => {
           if (chat.id === currentId) {
             const updatedMessages = [...chat.messages];
@@ -192,15 +183,9 @@ const ContextProvider = ({ children }: { children: ReactNode }) => {
         }));
       });
     } catch (err: unknown) {
-      const error = err as Error;
-      if (error?.name === 'AbortError') {
-        console.log("Generación cancelada por el usuario.");
-        return;
-      }
-      console.error(error);
-      const errorMessage = error?.message || "Error desconocido";
-      alert("Error detallado al generar: " + errorMessage);
-      const errorMsg: Message = { role: "model", text: "Hubo un error al procesar tu solicitud." };
+      if ((err as Error).name === 'AbortError') return;
+      console.error(err);
+      const errorMsg: Message = { role: "model", text: "Error: " + (err as Error).message };
       setChats(prev => prev.map(chat => 
         chat.id === currentId 
           ? { ...chat, messages: [...chat.messages, errorMsg] } 
@@ -209,118 +194,116 @@ const ContextProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiKey, input, loading, activeChatId, selectedModel, chats]);
 
-  const regenerate = async () => {
+  const regenerate = useCallback(async () => {
     if (!activeChatId || loading) return;
-    
     const activeChat = chats.find(c => c.id === activeChatId);
     if (!activeChat) return;
 
-    // Find the last user message to use as prompt
     const userMessages = activeChat.messages.filter(m => m.role === 'user');
     if (userMessages.length === 0) return;
-    
     const lastPrompt = userMessages[userMessages.length - 1].text;
 
-    // Remove last model message if it exists
     setChats(prev => prev.map(chat => {
-      if (chat.id === activeChatId) {
-        const lastMsg = chat.messages[chat.messages.length - 1];
-        if (lastMsg.role === 'model') {
-          return { ...chat, messages: chat.messages.slice(0, -1) };
-        }
+      if (chat.id === activeChatId && chat.messages[chat.messages.length - 1].role === 'model') {
+        return { ...chat, messages: chat.messages.slice(0, -1) };
       }
       return chat;
     }));
 
     setLoading(true);
-    
-    // Inject streaming placeholder
     setChats(prev => prev.map(chat => 
       chat.id === activeChatId 
         ? { ...chat, messages: [...chat.messages, { role: "model", text: "" }] } 
         : chat
     ));
 
-    // Create a new AbortController for this request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
+    if (abortControllerRef.current) abortControllerRef.current.abort();
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
+
+    const effectiveApiKey = apiKey || import.meta.env.VITE_GROQ_API_KEY;
 
     try {
       const lastUserIndex = activeChat.messages.map(m => m.role).lastIndexOf('user');
       const historyBeforeRetry = lastUserIndex >= 0 ? activeChat.messages.slice(0, lastUserIndex) : [];
-      await runChat(lastPrompt, historyBeforeRetry, undefined, abortController.signal, (tokenText: string) => {
+      
+      await runChat(lastPrompt, historyBeforeRetry, undefined, abortController.signal, effectiveApiKey, (tokenText) => {
         setChats(prev => prev.map(chat => {
           if (chat.id === activeChatId) {
             const updatedMessages = [...chat.messages];
             const lastMessage = updatedMessages[updatedMessages.length - 1];
-            if (lastMessage.role === 'model') {
-              lastMessage.text = tokenText;
-            }
+            if (lastMessage.role === 'model') lastMessage.text = tokenText;
             return { ...chat, messages: updatedMessages };
           }
           return chat;
         }));
       });
     } catch (err: unknown) {
-      const error = err as Error;
-      if (error?.name === 'AbortError') {
-        console.log("Generación cancelada por el usuario.");
-        return;
-      }
-      console.error(error);
-      const errorMessage = error?.message || "Error desconocido";
-      alert("Error detallado al generar: " + errorMessage);
+      if ((err as Error).name === 'AbortError') return;
+      console.error(err);
+      alert("Error: " + (err as Error).message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeChatId, apiKey, chats, loading]);
 
-  const stopGeneration = () => {
+  const stopGeneration = useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
     setLoading(false);
-  };
+  }, []);
 
-  const activeChat = chats.find(c => c.id === activeChatId);
-  const messages = activeChat ? activeChat.messages : [];
+  // Usamos useMemo para el valor del contexto. Esto es CRUCIAL para el rendimiento.
+  // Sin esto, cada vez que cambia CUALQUIER estado (como el input al escribir), 
+  // TODO el árbol de componentes se volvería a renderizar innecesariamente.
+  const contextValue = useMemo(() => {
+    const activeChat = chats.find(c => c.id === activeChatId);
+    const messages = activeChat ? activeChat.messages : [];
 
-  const contextValue: ContextProps = {
-    chats,
-    activeChatId,
-    onSent,
-    stopGeneration,
-    setRecentPrompt,
-    recentPrompt,
-    showResult,
-    loading,
-    messages,
-    input,
-    setInput,
-    newChat,
-    loadChat,
-    deleteChat,
-    renameChat,
-    clearAllChats,
-    setShowResult,
-    user,
-    setUser,
-    theme,
-    setTheme: setThemeState,
-    selectedModel,
-    setSelectedModel,
-    regenerate,
-    isSettingsOpen,
-    setIsSettingsOpen,
-    isMobileMenuOpen,
-    setIsMobileMenuOpen
-  };
+    return {
+      chats,
+      activeChatId,
+      onSent,
+      stopGeneration,
+      setRecentPrompt,
+      recentPrompt,
+      showResult,
+      loading,
+      messages,
+      input,
+      setInput,
+      newChat,
+      loadChat,
+      deleteChat,
+      renameChat,
+      clearAllChats,
+      setShowResult,
+      user,
+      setUser,
+      theme,
+      setTheme: setThemeState,
+      selectedModel,
+      setSelectedModel,
+      regenerate,
+      isSettingsOpen,
+      setIsSettingsOpen,
+      isMobileMenuOpen,
+      setIsMobileMenuOpen,
+      apiKey,
+      setApiKey
+    };
+  }, [
+    chats, activeChatId, onSent, stopGeneration, 
+    recentPrompt, showResult, loading, 
+    input, newChat, loadChat, deleteChat, 
+    renameChat, clearAllChats, user, theme, 
+    selectedModel, regenerate, isSettingsOpen, 
+    isMobileMenuOpen, apiKey
+  ]);
 
   return (
     <Context.Provider value={contextValue}>{children}</Context.Provider>

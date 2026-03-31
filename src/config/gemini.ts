@@ -2,13 +2,8 @@ import Groq from "groq-sdk";
 import type { Message } from "../context/Context";
 import type { ChatCompletionMessageParam } from "groq-sdk/resources/chat/completions";
 
-const groqApiKey = import.meta.env.VITE_GROQ_API_KEY;
+// El cliente Groq se inicializa dinámicamente dentro de runChat para permitir cambio de API Key
 
-if (!groqApiKey) {
-  throw new Error("VITE_GROQ_API_KEY is not defined in the environment.");
-}
-
-const groq = new Groq({ apiKey: groqApiKey, dangerouslyAllowBrowser: true });
 
 export const fileToGenerativePart = async (file: File): Promise<{ inlineData: { data: string, mimeType: string } }> => {
   return new Promise((resolve, reject) => {
@@ -32,8 +27,17 @@ export const runChat = async (
   history: Message[] = [], 
   imageData?: { data: string, mimeType: string }, 
   signal?: AbortSignal,
+  apiKey?: string,
   onToken?: (text: string) => void
 ): Promise<string> => {
+  const currentApiKey = apiKey || import.meta.env.VITE_GROQ_API_KEY;
+  
+  if (!currentApiKey) {
+    throw new Error("No hay API Key configurada. Por favor, añádela en Configuración.");
+  }
+
+  const groqClient = new Groq({ apiKey: currentApiKey, dangerouslyAllowBrowser: true });
+
   try {
     const mappedHistory: ChatCompletionMessageParam[] = history.map(msg => {
       if (msg.role === 'user' && msg.image) {
@@ -64,10 +68,9 @@ export const runChat = async (
     mappedHistory.push(currentMessage);
 
     const hasImageAnywhere = imageData || history.some(msg => msg.image);
-    // Use llama-3.1-8b-instant for text and meta-llama/llama-4-scout-17b-16e-instruct for vision (replacing decommissioned ones)
     const modelToUse = hasImageAnywhere ? "meta-llama/llama-4-scout-17b-16e-instruct" : "llama-3.1-8b-instant";
 
-    const chatStream = await groq.chat.completions.create({
+    const chatStream = await groqClient.chat.completions.create({
       messages: mappedHistory,
       model: modelToUse,
       stream: true,

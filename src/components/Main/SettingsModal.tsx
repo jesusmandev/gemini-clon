@@ -9,7 +9,12 @@ interface SettingsModalProps {
 }
 
 const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
-  const { theme, setTheme, selectedModel, setSelectedModel, clearAllChats } = useContext(Context)!;
+  const { 
+    theme, setTheme, 
+    selectedModel, setSelectedModel, 
+    clearAllChats, 
+    apiKey, setApiKey 
+  } = useContext(Context)!;
 
   const themes = [
     { id: 'light', icon: Sun, label: 'Claro' },
@@ -63,6 +68,32 @@ const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
                     <span className="text-xs font-medium">{t.label}</span>
                   </button>
                 ))}
+              </div>
+            </section>
+
+            {/* API Key Section */}
+            <section>
+              <h3 className="text-sm font-medium text-theme-text opacity-70 mb-4 uppercase tracking-wider">Seguridad de la API</h3>
+              <div className="space-y-3">
+                <div className="p-4 rounded-2xl bg-theme-sidebar border border-theme-border">
+                  {!apiKey && (
+                    <p className="text-xs text-theme-text opacity-50 mb-3">
+                      Para desplegar públicamente sin riesgos, pega tu Groq API Key aquí. Se guardará localmente.
+                    </p>
+                  )}
+                  <input 
+                    type="password"
+                    placeholder="gsk_..."
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    className="w-full bg-theme-card border border-theme-border rounded-xl px-4 py-2 text-sm text-theme-text focus:border-gemini-blue outline-none transition-all"
+                  />
+                  {apiKey && (
+                    <p className="text-[10px] text-green-500 mt-2 flex items-center gap-1">
+                      ✓ Llave configurada correctamente
+                    </p>
+                  )}
+                </div>
               </div>
             </section>
 

@@ -162,7 +162,7 @@ const Main = () => {
   };
 
   return (
-    <div className="flex-1 h-screen overflow-hidden flex flex-col items-center relative transition-colors duration-300" style={{ backgroundColor: 'var(--bg)', color: 'var(--text)' }}>
+    <div className="flex-1 h-screen overflow-hidden flex flex-col items-center relative transition-colors duration-300 bg-theme-bg text-theme-text">
 
       {/* Speech Error Toast */}
       <AnimatePresence>
@@ -188,7 +188,7 @@ const Main = () => {
             <Menu size={20} className="text-theme-text opacity-70" />
           </button>
           <div className="flex items-center gap-2 group cursor-pointer" onClick={() => newChat()}>
-            <img src="/gemini-color.svg" alt="Gemini" className="w-7 h-7 group-hover:scale-110 transition-transform" />
+            <img src={`${import.meta.env.BASE_URL}gemini-color.svg`} alt="Gemini" className="w-7 h-7 group-hover:scale-110 transition-transform" />
             <h1 className="text-xl font-medium text-theme-text tracking-tight">Gemini</h1>
           </div>
         </div>
@@ -230,7 +230,7 @@ const Main = () => {
           <div className="flex-1 flex flex-col items-center justify-center animate-in fade-in zoom-in duration-500">
             <div className="mb-8 flex flex-col items-center">
               <div className="p-4 bg-[var(--card)] rounded-3xl mb-4 border border-[var(--border)] shadow-xl shadow-gemini-blue/5">
-                <img src="/gemini-color.svg" alt="Gemini" className="w-12 h-12" />
+                <img src={`${import.meta.env.BASE_URL}gemini-color.svg`} alt="Gemini" className="w-12 h-12" />
               </div>
               <h2 className="text-4xl md:text-[56px] font-medium tracking-tight text-center text-[#0d47a1] dark:text-gray-100 mb-2">
                 Hola, {user ? user.name : "visitante"}
@@ -265,7 +265,7 @@ const Main = () => {
             ))}
             {loading && (
               <div className="flex justify-start items-center gap-2 text-theme-text opacity-50 animate-pulse ml-4 mb-8">
-                <img src="/gemini-color.svg" alt="Thinking" className="w-5 h-5 animate-spin duration-slow" />
+                <img src={`${import.meta.env.BASE_URL}gemini-color.svg`} alt="Thinking" className="w-5 h-5 animate-spin duration-slow" />
                 <span className="text-sm">Gemini está pensando...</span>
               </div>
             )}
@@ -275,7 +275,7 @@ const Main = () => {
       </main>
 
       {/* Floating Input Area */}
-      <footer className="w-full max-w-4xl px-4 pb-8 shrink-0">
+      <footer className="w-full max-w-4xl px-4 pb-8 shrink-0" role="contentinfo">
         <div className="bg-[#f0f4f9] dark:bg-[#1e1f20] rounded-[2rem] p-2 flex flex-col gap-2 transition-all duration-300 focus-within:ring-2 focus-within:ring-blue-500/20 group">
           <div className="flex items-center px-4 py-2">
             {/* Image Preview */}
@@ -290,11 +290,12 @@ const Main = () => {
                   <div className="relative group/img">
                     <img 
                       src={previewUrl} 
-                      alt="Preview" 
+                      alt="Vista previa de la imagen seleccionada" 
                       className="h-20 w-20 object-cover rounded-xl border border-theme-border shadow-lg" 
                     />
                     <button 
                       onClick={removeImage}
+                      aria-label="Eliminar imagen seleccionada"
                       className="absolute -top-2 -right-2 bg-theme-sidebar border border-theme-border text-theme-text p-1 rounded-full opacity-0 group-hover/img:opacity-100 transition-opacity shadow-xl"
                     >
                       <X size={14} />
@@ -315,6 +316,7 @@ const Main = () => {
                 }
               }}
               placeholder="¿Qué tienes en mente?"
+              aria-label="Entrada de mensaje para Gemini"
               className="flex-1 bg-transparent border-none outline-none text-lg text-[#041e49] dark:text-gray-100 placeholder-[#174ea6]/60 dark:placeholder-gray-400 resize-none minimal-scrollbar h-full max-h-48 py-2"
             />
             <div className="flex items-center gap-3 text-theme-text opacity-70 relative">
@@ -325,10 +327,12 @@ const Main = () => {
                     initial={{ opacity: 0, scale: 0.95, y: -10 }}
                     animate={{ opacity: 1, scale: 1, y: -20 }}
                     exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                    role="menu"
                     className="absolute bottom-full left-0 mb-4 bg-theme-card border border-theme-border rounded-2xl p-2 shadow-2xl z-50 min-w-[200px]"
                   >
                     <button 
                       onClick={() => fileInputRef.current?.click()}
+                      role="menuitem"
                       className="w-full flex items-center gap-3 p-3 hover:bg-theme-text/10 rounded-xl transition-colors text-theme-text opacity-80 hover:opacity-100"
                     >
                       <Paperclip size={18} />
@@ -336,6 +340,7 @@ const Main = () => {
                     </button>
                     <button 
                       onClick={() => photoInputRef.current?.click()}
+                      role="menuitem"
                       className="w-full flex items-center gap-3 p-3 hover:bg-theme-text/10 rounded-xl transition-colors text-theme-text opacity-80 hover:opacity-100"
                     >
                       <ImageIcon size={18} />
@@ -351,6 +356,7 @@ const Main = () => {
                 ref={fileInputRef} 
                 className="hidden" 
                 onChange={handleFileUpload} 
+                aria-hidden="true"
               />
               <input 
                 type="file" 
@@ -358,10 +364,13 @@ const Main = () => {
                 ref={photoInputRef} 
                 className="hidden" 
                 onChange={handleFileUpload} 
+                aria-hidden="true"
               />
 
               <button 
                 title="Adjuntar" 
+                aria-label="Abrir menú de adjuntos"
+                aria-expanded={showAttachmentMenu}
                 onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
                 className={`p-2 hover:bg-theme-text/10 rounded-full transition-all ${showAttachmentMenu ? 'bg-theme-text/10 text-theme-text rotate-45' : ''}`}
               >
@@ -369,6 +378,7 @@ const Main = () => {
               </button>
               
               <motion.button 
+                aria-label={isListening ? "Detener dictado de voz" : "Iniciar dictado de voz"}
                 title={isListening ? "Escuchando..." : "Grabar audio"}
                 onClick={toggleListening}
                 animate={isListening ? {
@@ -394,9 +404,10 @@ const Main = () => {
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
                     onClick={stopGeneration}
                     className="p-1 rounded-full hover:bg-theme-text/10 transition-all transform active:scale-95 ml-1"
+                    aria-label="Detener generación de respuesta"
                     title="Detener generación"
                   >
-                    <img src="/boton-detener.png" alt="Detener" className="w-8 h-8 object-contain" />
+                    <img src={`${import.meta.env.BASE_URL}boton-detener.png`} alt="Detener" className="w-8 h-8 object-contain" />
                   </motion.button>
                 ) : (input.trim() || selectedImage) ? (
                   <motion.button 
@@ -404,6 +415,7 @@ const Main = () => {
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
+                    aria-label="Enviar mensaje"
                     title="Enviar" 
                     onClick={() => handleSent()}
                     className="p-2 bg-theme-text text-theme-bg rounded-full hover:opacity-80 transition-all transform active:scale-95 ml-1"

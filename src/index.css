@@ -2,6 +2,31 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* 
+  Tokens de Diseño Unificados
+  Centralizamos todos los colores para que el tema luz/oscuro sea consistente
+  en toda la aplicación.
+*/
+:root {
+  --bg: #f8fbff;
+  --text: #0d47a1;
+  --sidebar: #e8f0fe;
+  --card: #f0f4f9;
+  --border: #d2e3fc;
+  --scrollbar-thumb: #ced4da;
+  --scrollbar-hover: #adb5bd;
+}
+
+.dark {
+  --bg: #131314;
+  --text: #e2e8f0;
+  --sidebar: #1e1f20;
+  --card: #1e1f20;
+  --border: rgba(255, 255, 255, 0.05);
+  --scrollbar-thumb: #3c4043;
+  --scrollbar-hover: #5f6368;
+}
+
 @theme {
   --color-gemini-blue: #4285F4;
   --color-gemini-purple: #9B72CB;
@@ -16,28 +41,16 @@
   --background-image-gemini-gradient: linear-gradient(16deg, #4285F4, #9B72CB, #D96570);
 }
 
-:root {
-  --bg: #f8fbff;
-  --text: #0d47a1;
-  --sidebar: #e8f0fe;
-  --card: #f0f4f9;
-  --border: #d2e3fc;
-}
-
-.dark {
-  --bg: #131314;
-  --text: #e2e8f0;
-  --sidebar: #1e1f20;
-  --card: #1e1f20;
-  --border: rgba(255, 255, 255, 0.05);
-}
-
 @layer base {
   body {
-    @apply min-h-screen overflow-x-hidden transition-colors duration-300;
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
     font-family: 'Outfit', sans-serif;
     background-color: var(--bg);
     color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
@@ -64,8 +77,18 @@
   }
 }
 
+/* 
+  Scrollbar Minimalista Dinámico
+  Se adapta automáticamente al tema usando nuestras variables.
+*/
+.minimal-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
 .minimal-scrollbar::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 
 .minimal-scrollbar::-webkit-scrollbar-track {
@@ -73,17 +96,12 @@
 }
 
 .minimal-scrollbar::-webkit-scrollbar-thumb {
-  background: #3c4043;
-  border-radius: 9999px;
+  background: var(--scrollbar-thumb);
+  border-radius: 10px;
+  transition: background 0.2s ease;
 }
 
 .minimal-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #5f6368;
-}
-
-/* Firefox support */
-.minimal-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: #3c4043 transparent;
+  background: var(--scrollbar-hover);
 }
 
