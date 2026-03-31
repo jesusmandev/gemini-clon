@@ -4,7 +4,7 @@ import babel from '@rolldown/plugin-babel'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/gemini-clon/',
+  base: process.env.GITHUB_PAGES ? '/gemini-clon/' : '/',
   plugins: [
     react(),
     babel({ presets: [reactCompilerPreset()] })
