@@ -182,10 +182,24 @@ const ContextProvider = ({ children }: { children: ReactNode }) => {
           return chat;
         }));
       });
-    } catch (err: unknown) {
-      if ((err as Error).name === 'AbortError') return;
+    } catch (err: any) {
+      if (err.name === 'AbortError') return;
       console.error(err);
-      const errorMsg: Message = { role: "model", text: "Error: " + (err as Error).message };
+      
+      let friendlyMsg = "Error inesperado. Inténtalo de nuevo.";
+      const errorText = err.message || "";
+      
+      if (errorText.includes("401") || errorText.includes("invalid_api_key")) {
+        friendlyMsg = "API Key inválida. Por favor, verifícala en Configuración.";
+      } else if (errorText.includes("429")) {
+        friendlyMsg = "Límite de peticiones alcanzado. Espera un momento antes de continuar.";
+      } else if (errorText.includes("503") || errorText.includes("overloaded")) {
+        friendlyMsg = "El servidor está sobrecargado. Inténtalo en unos segundos.";
+      } else {
+        friendlyMsg = "Error: " + errorText;
+      }
+
+      const errorMsg: Message = { role: "model", text: friendlyMsg };
       setChats(prev => prev.map(chat => 
         chat.id === currentId 
           ? { ...chat, messages: [...chat.messages, errorMsg] } 
