@@ -1,14 +1,11 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import SettingsModal from './SettingsModal';
 import { Context } from "../../context/Context";
-import { GoogleLogin, googleLogout } from "@react-oauth/google";
-import { jwtDecode } from "jwt-decode";
 import ChatBubble from "./ChatBubble";
 import {
   Plus,
   Mic,
   Send,
-  LogOut,
   Menu,
   Paperclip,
   X,
@@ -40,8 +37,6 @@ const Main = () => {
     messages,
     setInput,
     input,
-    user,
-    setUser,
     isSettingsOpen,
     setIsSettingsOpen,
     activeChatId,
@@ -110,20 +105,7 @@ const Main = () => {
   }, [messages]);
 
 
-  const handleLoginSuccess = (credentialResponse: { credential?: string }) => {
-    if (credentialResponse.credential) {
-      const decoded: { given_name?: string; name?: string; picture: string } = jwtDecode(credentialResponse.credential);
-      setUser({
-        name: decoded.given_name || decoded.name || "Usuario",
-        picture: decoded.picture
-      });
-    }
-  };
 
-  const handleLogout = () => {
-    googleLogout();
-    setUser(null);
-  };
 
   // Manejo de archivos. Si es imagen, la previsualizamos; si es otro tipo,
   // simplemente añadimos una etiqueta al texto (simulación).
@@ -201,26 +183,7 @@ const Main = () => {
           >
             {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
           </button>
-          {!user ? (
-            <div className="scale-90 opacity-90 hover:opacity-100 transition-opacity">
-              <GoogleLogin
-                onSuccess={handleLoginSuccess}
-                onError={() => console.log('Login Failed')}
-                theme="filled_blue"
-                shape="pill"
-              />
-            </div>
-          ) : (
-            <div className="flex items-center gap-3 bg-[var(--card)] px-4 py-2 rounded-full border border-[var(--border)] shadow-sm">
-              <button
-                onClick={handleLogout}
-                className="text-xs font-semibold text-theme-text opacity-70 hover:opacity-100 transition-colors flex items-center gap-1"
-              >
-                <LogOut size={14} /> Salir
-              </button>
-              <img className="w-8 h-8 rounded-full border border-[var(--border)]" src={user.picture} alt="User" />
-            </div>
-          )}
+
         </div>
       </header>
 
@@ -233,9 +196,9 @@ const Main = () => {
                 <img src={`${import.meta.env.BASE_URL}gemini-color.svg`} alt="Gemini" className="w-12 h-12" />
               </div>
               <h2 className="text-4xl md:text-[56px] font-medium tracking-tight text-center text-[#0d47a1] dark:text-gray-100 mb-2">
-                Hola, {user ? user.name : "visitante"}
+                Hola
               </h2>
-              <p className="text-4xl md:text-[56px] font-medium tracking-tight text-center text-[#174ea6]/70 dark:text-gray-500">¿Por dónde empezamos?</p>
+              <p className="text-4xl md:text-[56px] font-medium tracking-tight text-center text-[#174ea6]/70 dark:text-gray-500">¿En que puedo ayudarte hoy?</p>
             </div>
 
             {/* Dynamic Suggestions */}

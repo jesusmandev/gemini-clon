@@ -38,8 +38,6 @@ interface ContextProps {
   renameChat: (id: string, newTitle: string) => void;
   clearAllChats: () => void;
   setShowResult: React.Dispatch<React.SetStateAction<boolean>>;
-  user: { name: string; picture: string } | null;
-  setUser: React.Dispatch<React.SetStateAction<{ name: string; picture: string } | null>>;
   theme: 'dark' | 'light';
   setTheme: (theme: 'dark' | 'light') => void;
   selectedModel: "gemini-2.5-flash" | "gemini-2.5-pro";
@@ -60,7 +58,6 @@ const ContextProvider = ({ children }: { children: ReactNode }) => {
   const [recentPrompt, setRecentPrompt] = useState("");
   const [showResult, setShowResult] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState<{ name: string; picture: string } | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
@@ -182,12 +179,12 @@ const ContextProvider = ({ children }: { children: ReactNode }) => {
           return chat;
         }));
       });
-    } catch (err: any) {
-      if (err.name === 'AbortError') return;
+    } catch (err: unknown) {
+      if ((err as Error).name === 'AbortError') return;
       console.error(err);
       
       let friendlyMsg = "Error inesperado. Inténtalo de nuevo.";
-      const errorText = err.message || "";
+      const errorText = (err as Error).message || "";
       
       if (errorText.includes("401") || errorText.includes("invalid_api_key")) {
         friendlyMsg = "API Key inválida. Por favor, verifícala en Configuración.";
@@ -296,8 +293,6 @@ const ContextProvider = ({ children }: { children: ReactNode }) => {
       renameChat,
       clearAllChats,
       setShowResult,
-      user,
-      setUser,
       theme,
       setTheme: setThemeState,
       selectedModel,
@@ -314,7 +309,7 @@ const ContextProvider = ({ children }: { children: ReactNode }) => {
     chats, activeChatId, onSent, stopGeneration, 
     recentPrompt, showResult, loading, 
     input, newChat, loadChat, deleteChat, 
-    renameChat, clearAllChats, user, theme, 
+    renameChat, clearAllChats, theme, 
     selectedModel, regenerate, isSettingsOpen, 
     isMobileMenuOpen, apiKey
   ]);
