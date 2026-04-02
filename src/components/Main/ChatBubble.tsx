@@ -16,7 +16,7 @@ const ChatBubble = ({ message }: ChatBubbleProps) => {
   const [copied, setCopied] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const [likeStatus, setLikeStatus] = useState<'none' | 'liked' | 'disliked'>('none');
-  const { regenerate, loading, chats, activeChatId, user } = useContext(Context)!;
+  const { regenerate, loading, chats, activeChatId } = useContext(Context)!;
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -81,7 +81,7 @@ const ChatBubble = ({ message }: ChatBubbleProps) => {
           {/* Avatar del usuario o icono de Gemini */}
           <div className={`mt-1 shrink-0 ${isUser ? 'order-1' : ''}`}>
             {isUser ? (
-              <img src={user?.picture || `${import.meta.env.BASE_URL}user_icon.png`} alt="Tú" className="w-8 h-8 rounded-full border border-theme-border shadow-sm" />
+              <img src={`${import.meta.env.BASE_URL}user_icon.png`} alt="Tú" className="w-8 h-8 rounded-full border border-theme-border shadow-sm" />
             ) : (
               <div className="w-8 h-8 bg-theme-sidebar border border-theme-border rounded-full flex items-center justify-center shadow-sm">
                 <img src={`${import.meta.env.BASE_URL}gemini-color.svg`} alt="IA" className="w-5 h-5" />
